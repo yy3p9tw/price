@@ -3,8 +3,7 @@ import { initBackToTop } from './ui.js';
 
 const productListEl = document.getElementById('productList');
 const searchEl = document.getElementById('search');
-const categoryFilterEl = document.getElementById('categoryFilter');
-const categoryNavEl = document.getElementById('categoryNav');
+const quickNavEl = document.getElementById('quickNav');
 
 let categoriesCache = [];
 let productsCache = [];
@@ -82,7 +81,7 @@ function flatTableHtml(specs) {
 function productCardHtml(p) {
   const grid = p.specs.length ? buildGrid(p.specs) : null;
   return `
-    <div class="card">
+    <div class="card" id="prod-${p.id}">
       <div class="card-head">
         <div>
           <div class="product-name">${escapeHtml(p.name)}</div>
@@ -96,10 +95,8 @@ function productCardHtml(p) {
 
 function applyFiltersAndRender() {
   const q = searchEl.value.trim().toLowerCase();
-  const categoryId = categoryFilterEl.value;
 
   let products = productsCache;
-  if (categoryId) products = products.filter((p) => p.categoryId === categoryId);
   if (q) {
     products = products.filter((p) =>
       p.name.toLowerCase().includes(q) || p.specs.some((s) => s.spec_name.toLowerCase().includes(q))
@@ -112,7 +109,7 @@ function applyFiltersAndRender() {
 function renderProducts(products) {
   if (!products.length) {
     productListEl.innerHTML = '<div class="empty-state">找不到符合的產品</div>';
-    categoryNavEl.innerHTML = '';
+    quickNavEl.innerHTML = '';
     return;
   }
 
@@ -134,18 +131,15 @@ function renderProducts(products) {
     ${sec.items.map(productCardHtml).join('')}
   `).join('');
 
-  categoryNavEl.innerHTML = sections.map(sec =>
-    `<a href="#cat-${sec.id}">${escapeHtml(sec.name)}</a>`
+  quickNavEl.innerHTML = sections.flatMap(sec => sec.items).map(p =>
+    `<a href="#prod-${p.id}">${escapeHtml(p.name)}</a>`
   ).join('');
 }
 
 searchEl.addEventListener('input', applyFiltersAndRender);
-categoryFilterEl.addEventListener('change', applyFiltersAndRender);
 
 watchCategories((categories) => {
   categoriesCache = categories;
-  categoryFilterEl.innerHTML = '<option value="">全部分類</option>' +
-    categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
   applyFiltersAndRender();
 });
 
