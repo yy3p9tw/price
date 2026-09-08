@@ -1,8 +1,10 @@
 import { watchCategories, watchProducts } from './firestore-db.js';
+import { initBackToTop } from './ui.js';
 
 const productListEl = document.getElementById('productList');
 const searchEl = document.getElementById('search');
 const categoryFilterEl = document.getElementById('categoryFilter');
+const categoryNavEl = document.getElementById('categoryNav');
 
 let categoriesCache = [];
 let productsCache = [];
@@ -87,7 +89,7 @@ function productCardHtml(p) {
           ${p.note ? `<div class="note">${escapeHtml(p.note)}</div>` : ''}
         </div>
       </div>
-      ${p.specs.length ? (grid ? gridTableHtml(grid) : flatTableHtml(p.specs)) : '<div class="note">尚未設定規格</div>'}
+      ${p.specs.length ? `<div class="table-scroll">${grid ? gridTableHtml(grid) : flatTableHtml(p.specs)}</div>` : '<div class="note">尚未設定規格</div>'}
     </div>
   `;
 }
@@ -110,6 +112,7 @@ function applyFiltersAndRender() {
 function renderProducts(products) {
   if (!products.length) {
     productListEl.innerHTML = '<div class="empty-state">找不到符合的產品</div>';
+    categoryNavEl.innerHTML = '';
     return;
   }
 
@@ -122,14 +125,18 @@ function renderProducts(products) {
 
   const sections = [];
   for (const c of categoriesCache) {
-    if (groups.has(c.id)) sections.push({ name: c.name, items: groups.get(c.id) });
+    if (groups.has(c.id)) sections.push({ id: c.id, name: c.name, items: groups.get(c.id) });
   }
-  if (groups.has('none')) sections.push({ name: '未分類', items: groups.get('none') });
+  if (groups.has('none')) sections.push({ id: 'none', name: '未分類', items: groups.get('none') });
 
   productListEl.innerHTML = sections.map(sec => `
-    <h2 class="category-heading">${escapeHtml(sec.name)}</h2>
+    <h2 class="category-heading" id="cat-${sec.id}">${escapeHtml(sec.name)}</h2>
     ${sec.items.map(productCardHtml).join('')}
   `).join('');
+
+  categoryNavEl.innerHTML = sections.map(sec =>
+    `<a href="#cat-${sec.id}">${escapeHtml(sec.name)}</a>`
+  ).join('');
 }
 
 searchEl.addEventListener('input', applyFiltersAndRender);
@@ -146,3 +153,5 @@ watchProducts((products) => {
   productsCache = products;
   applyFiltersAndRender();
 });
+
+initBackToTop();

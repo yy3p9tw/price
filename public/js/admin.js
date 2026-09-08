@@ -3,6 +3,7 @@ import {
   createCategory, deleteCategory, createProduct, updateProduct, deleteProduct,
   addSpec, updateSpec, deleteSpec, getSpecHistory,
 } from './firestore-db.js';
+import { initBackToTop } from './ui.js';
 
 const productListEl = document.getElementById('productList');
 const searchEl = document.getElementById('search');
@@ -157,6 +158,7 @@ function renderProducts() {
       </div>
 
       ${p.specs.length ? `
+        <div class="table-scroll">
         <table>
           <thead><tr><th>規格</th><th>價格</th><th></th></tr></thead>
           <tbody>
@@ -175,6 +177,7 @@ function renderProducts() {
             `).join('')}
           </tbody>
         </table>
+        </div>
       ` : '<div class="note">尚未設定規格</div>'}
 
       <div class="spec-add-row">
@@ -345,3 +348,5 @@ categoryFilterEl.addEventListener('change', renderProducts);
     if (e.target === modal) modal.hidden = true;
   });
 });
+
+initBackToTop();

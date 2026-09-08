@@ -18,17 +18,26 @@
 
 * { box-sizing: border-box; }
 
+html { scroll-behavior: smooth; }
+
 body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, "Segoe UI", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  font-family: "Noto Sans TC", -apple-system, "Segoe UI", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
+  -webkit-text-size-adjust: 100%;
 }
 
 a { color: var(--primary); text-decoration: none; }
 a:hover { text-decoration: underline; }
+
+.sticky-head {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
 
 .topbar {
   background: var(--surface);
@@ -37,10 +46,8 @@ a:hover { text-decoration: underline; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .topbar h1 {
@@ -69,11 +76,11 @@ a:hover { text-decoration: underline; }
   align-items: center;
 }
 
-input[type="text"], input[type="number"], select, textarea {
+input[type="text"], input[type="number"], input[type="email"], input[type="password"], select, textarea {
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 14px;
+  padding: 10px 12px;
+  font-size: 16px;
   background: var(--surface);
   color: var(--text);
   font-family: inherit;
@@ -89,11 +96,12 @@ input:focus, select:focus, textarea:focus {
 button {
   border: none;
   border-radius: 8px;
-  padding: 8px 14px;
-  font-size: 13px;
+  padding: 10px 16px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .btn-primary { background: var(--primary); color: #fff; }
@@ -149,6 +157,8 @@ button {
 
 .card-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 8px; }
+.table-scroll table { margin-top: 0; }
 table { width: 100%; border-collapse: collapse; margin-top: 8px; }
 th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--border); font-size: 13px; }
 th { color: var(--text-muted); font-weight: 600; font-size: 12px; }
@@ -164,6 +174,7 @@ th.row-head { color: var(--text); font-weight: 600; font-size: 13px; white-space
   margin: 28px 0 10px;
   padding-bottom: 6px;
   border-bottom: 2px solid var(--border);
+  scroll-margin-top: 110px;
 }
 
 .category-heading:first-child {
@@ -250,3 +261,62 @@ th.row-head { color: var(--text); font-weight: 600; font-size: 13px; white-space
 .muted-link:hover { color: var(--primary); }
 
 .hint { color: var(--text-muted); font-size: 12px; margin-top: -8px; margin-bottom: 12px; }
+
+/* 分類前導覽 */
+.category-nav {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 24px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.category-nav:empty { display: none; }
+.category-nav::-webkit-scrollbar { display: none; }
+.category-nav a {
+  flex-shrink: 0;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.category-nav a:hover { text-decoration: none; border-color: var(--primary); color: var(--primary); }
+
+/* 回頂部 */
+.back-to-top {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  z-index: 50;
+}
+.back-to-top:hover { background: var(--bg); }
+.back-to-top[hidden] { display: none; }
+
+@media (max-width: 640px) {
+  .topbar { padding: 12px 16px; }
+  .topbar h1 { font-size: 16px; }
+  .category-nav { padding: 8px 16px; }
+  .container { padding: 16px 16px 60px; }
+  .card { padding: 14px; }
+  .product-name { font-size: 15px; }
+  th, td { padding: 7px 6px; font-size: 12.5px; }
+  .back-to-top { right: 14px; bottom: 14px; }
+}

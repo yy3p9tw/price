@@ -2,17 +2,22 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>後台管理 - 產品價格</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;900&display=swap">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<div class="topbar">
-  <h1>後台管理</h1>
-  <nav>
-    <span class="muted-link" id="logoutBtn" hidden>登出</span>
-    <a href="index.html">← 回到前台查詢</a>
-  </nav>
+<div class="sticky-head">
+  <div class="topbar">
+    <h1>後台管理</h1>
+    <nav>
+      <span class="muted-link" id="logoutBtn" hidden>登出</span>
+      <a href="index.html">← 回到前台查詢</a>
+    </nav>
+  </div>
 </div>
 
 <div class="container">
@@ -113,6 +118,8 @@
     </div>
   </div>
 </div>
+
+<button class="back-to-top" id="backToTop" hidden title="回到頂部">↑</button>
 
 <script type="module" src="js/admin.js"></script>
 </body>
