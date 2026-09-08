@@ -1,7 +1,7 @@
 import {
   watchAuth, login, logout, watchCategories, watchProducts,
   createCategory, deleteCategory, createProduct, updateProduct, deleteProduct,
-  addSpec, updateSpec, deleteSpec, getSpecHistory,
+  addSpec, updateSpec, deleteSpec, getSpecHistory, setProductNew, setSpecChanged,
 } from './firestore-db.js';
 import { initBackToTop } from './ui.js';
 
@@ -147,11 +147,12 @@ function renderProducts() {
     <div class="card" data-product-id="${p.id}">
       <div class="card-head">
         <div>
-          <div class="product-name">${escapeHtml(p.name)}</div>
+          <div class="product-name">${escapeHtml(p.name)} ${p.isNew ? '<span class="badge-new">NEW</span>' : ''}</div>
           ${p.categoryId ? `<span class="tag">${escapeHtml(categoryName(p.categoryId))}</span>` : ''}
           ${p.note ? `<div class="note">${escapeHtml(p.note)}</div>` : ''}
         </div>
         <div class="card-actions">
+          <button class="btn-secondary btn-sm toggle-new-btn" data-id="${p.id}" data-value="${p.isNew ? '0' : '1'}">${p.isNew ? '取消新品標記' : '標記新品'}</button>
           <button class="btn-secondary btn-sm edit-product-btn" data-id="${p.id}">編輯</button>
           <button class="btn-danger btn-sm del-product-btn" data-id="${p.id}">刪除</button>
         </div>
@@ -165,10 +166,11 @@ function renderProducts() {
             ${p.specs.map(s => `
               <tr data-spec-id="${s.id}">
                 <td>${escapeHtml(s.spec_name)}</td>
-                <td class="price-cell">${priceCellHtml(s.price)}</td>
+                <td class="price-cell">${priceCellHtml(s.price)} ${s.justChanged ? '<span class="badge-changed">調整</span>' : ''}</td>
                 <td>
                   <div class="spec-row-actions">
                     <span class="muted-link history-spec-btn" data-id="${s.id}">歷史</span>
+                    <span class="muted-link toggle-changed-btn" data-id="${s.id}" data-value="${s.justChanged ? '0' : '1'}">${s.justChanged ? '取消標記' : '標記調整'}</span>
                     <button class="btn-secondary btn-sm edit-spec-btn" data-id="${s.id}">編輯</button>
                     <button class="btn-danger btn-sm del-spec-btn" data-id="${s.id}">刪除</button>
                   </div>
@@ -200,6 +202,19 @@ function bindProductCardEvents() {
     btn.addEventListener('click', async () => {
       if (!confirm('確定刪除此產品？其下所有規格與歷史紀錄也會一併刪除。')) return;
       await deleteProduct(btn.dataset.id);
+    });
+  });
+
+  productListEl.querySelectorAll('.toggle-new-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await setProductNew(btn.dataset.id, btn.dataset.value === '1');
+    });
+  });
+
+  productListEl.querySelectorAll('.toggle-changed-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const product = products.find(p => p.specs.some(s => s.id === btn.dataset.id));
+      await setSpecChanged(product, btn.dataset.id, btn.dataset.value === '1');
     });
   });
 

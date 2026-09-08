@@ -67,6 +67,10 @@ export async function updateProduct(id, { name, categoryId, note }) {
   await updateDoc(doc(db, 'products', id), { name, categoryId: categoryId || null, note: note || null });
 }
 
+export async function setProductNew(id, isNew) {
+  await updateDoc(doc(db, 'products', id), { isNew });
+}
+
 export async function deleteProduct(id) {
   await deleteDoc(doc(db, 'products', id));
   const histSnap = await getDocs(query(collection(db, 'priceHistory'), where('productId', '==', id)));
@@ -104,6 +108,11 @@ export async function updateSpec(product, specId, { spec_name, price }) {
 
 export async function deleteSpec(product, specId) {
   const specs = (product.specs || []).filter((s) => s.id !== specId);
+  await updateDoc(doc(db, 'products', product.id), { specs });
+}
+
+export async function setSpecChanged(product, specId, justChanged) {
+  const specs = (product.specs || []).map((s) => (s.id === specId ? { ...s, justChanged } : s));
   await updateDoc(doc(db, 'products', product.id), { specs });
 }
 

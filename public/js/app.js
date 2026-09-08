@@ -18,8 +18,9 @@ function formatPrice(n) {
   return Number(n).toLocaleString('zh-Hant', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
-function priceCellHtml(price) {
-  return price === null || price === undefined ? '--' : `$${formatPrice(price)}`;
+function priceCellHtml(price, justChanged) {
+  const priceText = price === null || price === undefined ? '--' : `$${formatPrice(price)}`;
+  return justChanged ? `${priceText} <span class="badge-changed">調整</span>` : priceText;
 }
 
 // 若所有規格名稱都是「規格 / 等級」格式，且規格與等級各有多種取值，
@@ -34,7 +35,7 @@ function buildGrid(specs) {
     const [row, col] = parts;
     if (!rows.includes(row)) rows.push(row);
     if (!cols.includes(col)) cols.push(col);
-    matrix[row + ' ' + col] = s.price;
+    matrix[row + ' ' + col] = s;
   }
   if (rows.length < 2 || cols.length < 2) return null;
   return { rows, cols, matrix };
@@ -51,9 +52,8 @@ function gridTableHtml(grid) {
           <tr>
             <th class="row-head">${escapeHtml(r)}</th>
             ${grid.cols.map(c => {
-              const key = r + ' ' + c;
-              const has = Object.prototype.hasOwnProperty.call(grid.matrix, key);
-              return `<td class="price-cell">${has ? priceCellHtml(grid.matrix[key]) : '--'}</td>`;
+              const s = grid.matrix[r + ' ' + c];
+              return `<td class="price-cell">${s ? priceCellHtml(s.price, s.justChanged) : '--'}</td>`;
             }).join('')}
           </tr>
         `).join('')}
@@ -70,7 +70,7 @@ function flatTableHtml(specs) {
         ${specs.map(s => `
           <tr>
             <td>${escapeHtml(s.spec_name)}</td>
-            <td class="price-cell">${priceCellHtml(s.price)}</td>
+            <td class="price-cell">${priceCellHtml(s.price, s.justChanged)}</td>
           </tr>
         `).join('')}
       </tbody>
@@ -84,7 +84,7 @@ function productCardHtml(p) {
     <div class="card" id="prod-${p.id}">
       <div class="card-head">
         <div>
-          <div class="product-name">${escapeHtml(p.name)}</div>
+          <div class="product-name">${escapeHtml(p.name)} ${p.isNew ? '<span class="badge-new">NEW</span>' : ''}</div>
           ${p.note ? `<div class="note">${escapeHtml(p.note)}</div>` : ''}
         </div>
       </div>

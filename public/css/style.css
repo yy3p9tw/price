@@ -12,6 +12,8 @@
   --success: #16a34a;
   --tag-bg: #eef2ff;
   --tag-text: #4338ca;
+  --badge-bg: #fff7ed;
+  --badge-text: #c2410c;
   --radius: 10px;
   --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
 }
@@ -154,6 +156,17 @@ button {
   color: var(--text-muted);
   font-size: 12.5px;
   margin-top: 2px;
+}
+
+.badge-new, .badge-changed {
+  display: inline-block;
+  background: var(--badge-bg);
+  color: var(--badge-text);
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
 }
 
 .card-actions { display: flex; gap: 6px; flex-shrink: 0; }
