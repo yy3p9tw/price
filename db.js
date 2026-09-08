@@ -2,8 +2,9 @@ const path = require('node:path');
 const fs = require('node:fs');
 const { DatabaseSync } = require('node:sqlite');
 
-const dataDir = path.join(__dirname, 'data');
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
+// DATA_DIR 讓雲端主機（例如 Render 的 persistent disk）可以指定資料存放路徑
+const dataDir = process.env.DATA_DIR || path.join(__dirname, 'data');
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
 const db = new DatabaseSync(path.join(dataDir, 'price.db'));
 db.exec('PRAGMA foreign_keys = ON;');

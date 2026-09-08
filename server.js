@@ -3,13 +3,16 @@ const path = require('node:path');
 const fs = require('node:fs');
 const db = require('./db');
 
-const authPath = fs.existsSync(path.join(__dirname, 'auth.json'))
-  ? './auth.json'
-  : './auth.json.example';
-if (authPath === './auth.json.example') {
-  console.warn('警告：找不到 auth.json，暫用 auth.json.example 的預設帳密，請盡快複製一份 auth.json 並修改密碼。');
+// 帳密優先順序：環境變數（雲端主機用）> auth.json（本機用）> auth.json.example（預設備援）
+let auth;
+if (process.env.ADMIN_USERNAME && process.env.ADMIN_PASSWORD) {
+  auth = { username: process.env.ADMIN_USERNAME, password: process.env.ADMIN_PASSWORD };
+} else if (fs.existsSync(path.join(__dirname, 'auth.json'))) {
+  auth = require('./auth.json');
+} else {
+  console.warn('警告：找不到 auth.json 也沒有設定 ADMIN_USERNAME/ADMIN_PASSWORD 環境變數，暫用預設帳密，請盡快設定。');
+  auth = require('./auth.json.example');
 }
-const auth = require(authPath);
 
 const app = express();
 app.use(express.json());
