@@ -1,10 +1,21 @@
+import {
+  watchAuth, login, logout, watchCategories, watchProducts,
+  createCategory, deleteCategory, createProduct, updateProduct, deleteProduct,
+  addSpec, updateSpec, deleteSpec, getSpecHistory,
+} from './firestore-db.js';
+
 const productListEl = document.getElementById('productList');
 const searchEl = document.getElementById('search');
 const categoryFilterEl = document.getElementById('categoryFilter');
 const categoryListEl = document.getElementById('categoryList');
+const loginCard = document.getElementById('loginCard');
+const adminArea = document.getElementById('adminArea');
+const logoutBtn = document.getElementById('logoutBtn');
 
 let categories = [];
-let searchTimer = null;
+let products = [];
+let stopWatchCategories = null;
+let stopWatchProducts = null;
 
 function escapeHtml(str) {
   return String(str ?? '').replace(/[&<>"']/g, (c) => ({
@@ -20,25 +31,49 @@ function priceCellHtml(price) {
   return price === null || price === undefined ? '--' : `$${formatPrice(price)}`;
 }
 
-function formatDate(iso) {
-  if (!iso) return '';
-  return iso.replace('T', ' ').slice(0, 19);
+function formatDate(ts) {
+  if (!ts || !ts.seconds) return '';
+  return new Date(ts.seconds * 1000).toLocaleString('zh-Hant', { hour12: false });
 }
 
-async function api(url, options) {
-  const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || '發生錯誤');
-  return data;
-}
+// ---------- auth ----------
+
+watchAuth((user) => {
+  if (user) {
+    loginCard.hidden = true;
+    adminArea.hidden = false;
+    logoutBtn.hidden = false;
+    if (!stopWatchCategories) stopWatchCategories = watchCategories(onCategories);
+    if (!stopWatchProducts) stopWatchProducts = watchProducts(onProducts);
+  } else {
+    loginCard.hidden = false;
+    adminArea.hidden = true;
+    logoutBtn.hidden = true;
+    if (stopWatchCategories) { stopWatchCategories(); stopWatchCategories = null; }
+    if (stopWatchProducts) { stopWatchProducts(); stopWatchProducts = null; }
+    categories = [];
+    products = [];
+  }
+});
+
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errorEl = document.getElementById('loginError');
+  errorEl.textContent = '';
+  try {
+    await login(email, password);
+  } catch (e) {
+    errorEl.textContent = '登入失敗，請確認帳號密碼。';
+  }
+});
+
+logoutBtn.addEventListener('click', () => logout());
 
 // ---------- categories ----------
 
-async function loadCategories() {
-  categories = await api('/api/categories');
+function onCategories(list) {
+  categories = list;
 
   categoryListEl.innerHTML = categories.map(c => `
     <span class="category-chip">
@@ -54,11 +89,11 @@ async function loadCategories() {
   categoryListEl.querySelectorAll('.del-category-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       if (!confirm('刪除此分類？（底下的產品會變成無分類，不會被刪除）')) return;
-      await api(`/api/categories/${btn.dataset.id}`, { method: 'DELETE' });
-      await loadCategories();
-      await loadProducts();
+      await deleteCategory(btn.dataset.id);
     });
   });
+
+  renderProducts();
 }
 
 document.getElementById('addCategoryBtn').addEventListener('click', async () => {
@@ -66,9 +101,9 @@ document.getElementById('addCategoryBtn').addEventListener('click', async () => 
   const name = input.value.trim();
   if (!name) return;
   try {
-    await api('/api/categories', { method: 'POST', body: JSON.stringify({ name }) });
+    const nextOrder = categories.reduce((max, c) => Math.max(max, c.sortOrder ?? 0), 0) + 1;
+    await createCategory(name, nextOrder);
     input.value = '';
-    await loadCategories();
   } catch (e) {
     alert(e.message);
   }
@@ -76,27 +111,43 @@ document.getElementById('addCategoryBtn').addEventListener('click', async () => 
 
 // ---------- products ----------
 
-async function loadProducts() {
-  const params = new URLSearchParams();
-  if (searchEl.value.trim()) params.set('q', searchEl.value.trim());
-  if (categoryFilterEl.value) params.set('category_id', categoryFilterEl.value);
-
-  const products = await api('/api/products?' + params.toString());
-  renderProducts(products);
+function onProducts(list) {
+  products = list;
+  renderProducts();
 }
 
-function renderProducts(products) {
-  if (!products.length) {
+function filteredProducts() {
+  const q = searchEl.value.trim().toLowerCase();
+  const categoryId = categoryFilterEl.value;
+  let list = products;
+  if (categoryId) list = list.filter((p) => p.categoryId === categoryId);
+  if (q) {
+    list = list.filter((p) =>
+      p.name.toLowerCase().includes(q) || p.specs.some((s) => s.spec_name.toLowerCase().includes(q))
+    );
+  }
+  return list;
+}
+
+function categoryName(id) {
+  const c = categories.find((c) => c.id === id);
+  return c ? c.name : '';
+}
+
+function renderProducts() {
+  const list = filteredProducts();
+
+  if (!list.length) {
     productListEl.innerHTML = '<div class="empty-state">尚無產品，點選「＋ 新增產品」開始建立</div>';
     return;
   }
 
-  productListEl.innerHTML = products.map(p => `
+  productListEl.innerHTML = list.map(p => `
     <div class="card" data-product-id="${p.id}">
       <div class="card-head">
         <div>
           <div class="product-name">${escapeHtml(p.name)}</div>
-          ${p.category_name ? `<span class="tag">${escapeHtml(p.category_name)}</span>` : ''}
+          ${p.categoryId ? `<span class="tag">${escapeHtml(categoryName(p.categoryId))}</span>` : ''}
           ${p.note ? `<div class="note">${escapeHtml(p.note)}</div>` : ''}
         </div>
         <div class="card-actions">
@@ -134,19 +185,18 @@ function renderProducts(products) {
     </div>
   `).join('');
 
-  bindProductCardEvents(products);
+  bindProductCardEvents();
 }
 
-function bindProductCardEvents(products) {
+function bindProductCardEvents() {
   productListEl.querySelectorAll('.edit-product-btn').forEach(btn => {
-    btn.addEventListener('click', () => openProductModal(products.find(p => p.id == btn.dataset.id)));
+    btn.addEventListener('click', () => openProductModal(products.find(p => p.id === btn.dataset.id)));
   });
 
   productListEl.querySelectorAll('.del-product-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       if (!confirm('確定刪除此產品？其下所有規格與歷史紀錄也會一併刪除。')) return;
-      await api(`/api/products/${btn.dataset.id}`, { method: 'DELETE' });
-      await loadProducts();
+      await deleteProduct(btn.dataset.id);
     });
   });
 
@@ -160,11 +210,8 @@ function bindProductCardEvents(products) {
       if (!spec_name) return alert('請輸入規格名稱');
       if (price !== '' && Number(price) < 0) return alert('請輸入有效價格');
       try {
-        await api(`/api/products/${btn.dataset.id}/specs`, {
-          method: 'POST',
-          body: JSON.stringify({ spec_name, price: price === '' ? null : Number(price) }),
-        });
-        await loadProducts();
+        const product = products.find(p => p.id === btn.dataset.id);
+        await addSpec(product, { spec_name, price: price === '' ? null : Number(price) });
       } catch (e) {
         alert(e.message);
       }
@@ -173,23 +220,25 @@ function bindProductCardEvents(products) {
 
   productListEl.querySelectorAll('.edit-spec-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const row = btn.closest('tr');
-      const product = products.find(p => p.specs.some(s => s.id == btn.dataset.id));
-      const spec = product.specs.find(s => s.id == btn.dataset.id);
-      openSpecModal(spec);
+      const product = products.find(p => p.specs.some(s => s.id === btn.dataset.id));
+      const spec = product.specs.find(s => s.id === btn.dataset.id);
+      openSpecModal(product.id, spec);
     });
   });
 
   productListEl.querySelectorAll('.del-spec-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       if (!confirm('確定刪除此規格？')) return;
-      await api(`/api/specs/${btn.dataset.id}`, { method: 'DELETE' });
-      await loadProducts();
+      const product = products.find(p => p.specs.some(s => s.id === btn.dataset.id));
+      await deleteSpec(product, btn.dataset.id);
     });
   });
 
   productListEl.querySelectorAll('.history-spec-btn').forEach(btn => {
-    btn.addEventListener('click', () => openHistoryModal(btn.dataset.id));
+    btn.addEventListener('click', () => {
+      const product = products.find(p => p.specs.some(s => s.id === btn.dataset.id));
+      openHistoryModal(product.id, btn.dataset.id);
+    });
   });
 }
 
@@ -201,7 +250,7 @@ function openProductModal(product) {
   document.getElementById('productModalTitle').textContent = product ? '編輯產品' : '新增產品';
   document.getElementById('productId').value = product ? product.id : '';
   document.getElementById('productName').value = product ? product.name : '';
-  document.getElementById('productCategory').value = product && product.category_id ? product.category_id : '';
+  document.getElementById('productCategory').value = product && product.categoryId ? product.categoryId : '';
   document.getElementById('productNote').value = product ? (product.note || '') : '';
   productModal.hidden = false;
 }
@@ -212,18 +261,18 @@ document.getElementById('productCancelBtn').addEventListener('click', () => (pro
 document.getElementById('productSaveBtn').addEventListener('click', async () => {
   const id = document.getElementById('productId').value;
   const name = document.getElementById('productName').value.trim();
-  const category_id = document.getElementById('productCategory').value || null;
+  const categoryId = document.getElementById('productCategory').value || null;
   const note = document.getElementById('productNote').value.trim() || null;
   if (!name) return alert('請輸入產品名稱');
 
   try {
     if (id) {
-      await api(`/api/products/${id}`, { method: 'PUT', body: JSON.stringify({ name, category_id, note }) });
+      await updateProduct(id, { name, categoryId, note });
     } else {
-      await api('/api/products', { method: 'POST', body: JSON.stringify({ name, category_id, note }) });
+      const nextSeq = products.reduce((max, p) => Math.max(max, p.seq ?? 0), 0) + 1;
+      await createProduct({ name, categoryId, note, seq: nextSeq });
     }
     productModal.hidden = true;
-    await loadProducts();
   } catch (e) {
     alert(e.message);
   }
@@ -232,8 +281,10 @@ document.getElementById('productSaveBtn').addEventListener('click', async () => 
 // ---------- spec modal ----------
 
 const specModal = document.getElementById('specModal');
+let specModalProductId = null;
 
-function openSpecModal(spec) {
+function openSpecModal(productId, spec) {
+  specModalProductId = productId;
   document.getElementById('specId').value = spec.id;
   document.getElementById('specName').value = spec.spec_name;
   document.getElementById('specPrice').value = spec.price === null ? '' : spec.price;
@@ -250,12 +301,9 @@ document.getElementById('specSaveBtn').addEventListener('click', async () => {
   if (price !== '' && Number(price) < 0) return alert('請輸入有效價格');
 
   try {
-    await api(`/api/specs/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify({ spec_name, price: price === '' ? null : Number(price) }),
-    });
+    const product = products.find(p => p.id === specModalProductId);
+    await updateSpec(product, id, { spec_name, price: price === '' ? null : Number(price) });
     specModal.hidden = true;
-    await loadProducts();
   } catch (e) {
     alert(e.message);
   }
@@ -265,21 +313,21 @@ document.getElementById('specSaveBtn').addEventListener('click', async () => {
 
 const historyModal = document.getElementById('historyModal');
 
-async function openHistoryModal(specId) {
-  const history = await api(`/api/specs/${specId}/history`);
+async function openHistoryModal(productId, specId) {
+  const history = await getSpecHistory(productId, specId);
   const listEl = document.getElementById('historyList');
 
   if (!history.length) {
     listEl.innerHTML = '<li>尚無異動紀錄</li>';
   } else {
     listEl.innerHTML = history.map(h => {
-      const isFirst = h.old_price === null;
-      const diff = isFirst ? null : h.new_price - h.old_price;
+      const isFirst = h.oldPrice === null || h.oldPrice === undefined;
+      const diff = isFirst ? null : h.newPrice - h.oldPrice;
       const cls = diff > 0 ? 'price-up' : diff < 0 ? 'price-down' : '';
       const desc = isFirst
-        ? `設定價格為 $${formatPrice(h.new_price)}`
-        : `$${formatPrice(h.old_price)} → $${formatPrice(h.new_price)}`;
-      return `<li><span>${formatDate(h.changed_at)}</span><span class="${cls}">${desc}</span></li>`;
+        ? `設定價格為 $${formatPrice(h.newPrice)}`
+        : `$${formatPrice(h.oldPrice)} → $${formatPrice(h.newPrice)}`;
+      return `<li><span>${formatDate(h.changedAt)}</span><span class="${cls}">${desc}</span></li>`;
     }).join('');
   }
   historyModal.hidden = false;
@@ -289,19 +337,11 @@ document.getElementById('historyCloseBtn').addEventListener('click', () => (hist
 
 // ---------- misc ----------
 
-searchEl.addEventListener('input', () => {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(loadProducts, 250);
-});
-categoryFilterEl.addEventListener('change', loadProducts);
+searchEl.addEventListener('input', renderProducts);
+categoryFilterEl.addEventListener('change', renderProducts);
 
 [productModal, specModal, historyModal].forEach(modal => {
   modal.addEventListener('click', (e) => {
     if (e.target === modal) modal.hidden = true;
   });
 });
-
-(async function init() {
-  await loadCategories();
-  await loadProducts();
-})();

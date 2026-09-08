@@ -10,32 +10,53 @@
 <div class="topbar">
   <h1>後台管理</h1>
   <nav>
+    <span class="muted-link" id="logoutBtn" hidden>登出</span>
     <a href="index.html">← 回到前台查詢</a>
   </nav>
 </div>
 
 <div class="container">
 
-  <div class="card">
+  <div class="card" id="loginCard">
     <div class="card-head">
-      <div class="product-name" style="font-size:14px;">分類管理</div>
+      <div class="product-name" style="font-size:14px;">後台登入</div>
     </div>
-    <div class="category-list" id="categoryList"></div>
-    <div class="spec-add-row">
-      <input type="text" id="newCategoryName" placeholder="新增分類名稱…">
-      <button class="btn-primary btn-sm" id="addCategoryBtn">新增分類</button>
+    <div class="form-row">
+      <label>Email</label>
+      <input type="email" id="loginEmail">
+    </div>
+    <div class="form-row">
+      <label>密碼</label>
+      <input type="password" id="loginPassword">
+    </div>
+    <div class="note" id="loginError"></div>
+    <div class="form-actions" style="justify-content:flex-start;">
+      <button class="btn-primary" id="loginBtn">登入</button>
     </div>
   </div>
 
-  <div class="toolbar">
-    <input type="text" id="search" class="search-input" placeholder="搜尋產品名稱或規格…">
-    <select id="categoryFilter">
-      <option value="">全部分類</option>
-    </select>
-    <button class="btn-primary" id="addProductBtn">＋ 新增產品</button>
-  </div>
+  <div id="adminArea" hidden>
+    <div class="card">
+      <div class="card-head">
+        <div class="product-name" style="font-size:14px;">分類管理</div>
+      </div>
+      <div class="category-list" id="categoryList"></div>
+      <div class="spec-add-row">
+        <input type="text" id="newCategoryName" placeholder="新增分類名稱…">
+        <button class="btn-primary btn-sm" id="addCategoryBtn">新增分類</button>
+      </div>
+    </div>
 
-  <div id="productList"></div>
+    <div class="toolbar">
+      <input type="text" id="search" class="search-input" placeholder="搜尋產品名稱或規格…">
+      <select id="categoryFilter">
+        <option value="">全部分類</option>
+      </select>
+      <button class="btn-primary" id="addProductBtn">＋ 新增產品</button>
+    </div>
+
+    <div id="productList"></div>
+  </div>
 </div>
 
 <!-- 產品新增/編輯 modal -->
@@ -93,6 +114,6 @@
   </div>
 </div>
 
-<script src="js/admin.js"></script>
+<script type="module" src="js/admin.js"></script>
 </body>
 </html>

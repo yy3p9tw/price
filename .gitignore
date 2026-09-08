@@ -3,3 +3,8 @@ data/
 auth.json
 seed.js
 *.log
+export-*.json
+build-migration-data.js
+public/migration-data.json
+public/import.html
+public/js/import.js
