@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>後台管理 - 產品價格</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="topbar">
+  <h1>後台管理</h1>
+  <nav>
+    <a href="index.html">← 回到前台查詢</a>
+  </nav>
+</div>
+
+<div class="container">
+
+  <div class="card">
+    <div class="card-head">
+      <div class="product-name" style="font-size:14px;">分類管理</div>
+    </div>
+    <div class="category-list" id="categoryList"></div>
+    <div class="spec-add-row">
+      <input type="text" id="newCategoryName" placeholder="新增分類名稱…">
+      <button class="btn-primary btn-sm" id="addCategoryBtn">新增分類</button>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <input type="text" id="search" class="search-input" placeholder="搜尋產品名稱或規格…">
+    <select id="categoryFilter">
+      <option value="">全部分類</option>
+    </select>
+    <button class="btn-primary" id="addProductBtn">＋ 新增產品</button>
+  </div>
+
+  <div id="productList"></div>
+</div>
+
+<!-- 產品新增/編輯 modal -->
+<div class="modal-backdrop" id="productModal" hidden>
+  <div class="modal">
+    <h2 id="productModalTitle">新增產品</h2>
+    <input type="hidden" id="productId">
+    <div class="form-row">
+      <label>產品名稱</label>
+      <input type="text" id="productName">
+    </div>
+    <div class="form-row">
+      <label>分類</label>
+      <select id="productCategory"><option value="">（無分類）</option></select>
+    </div>
+    <div class="form-row">
+      <label>備註</label>
+      <textarea id="productNote" rows="2"></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" id="productCancelBtn">取消</button>
+      <button class="btn-primary" id="productSaveBtn">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 規格編輯 modal -->
+<div class="modal-backdrop" id="specModal" hidden>
+  <div class="modal">
+    <h2>編輯規格</h2>
+    <input type="hidden" id="specId">
+    <div class="form-row">
+      <label>規格名稱</label>
+      <input type="text" id="specName">
+    </div>
+    <div class="form-row">
+      <label>價格</label>
+      <input type="number" id="specPrice" min="0" step="0.01" placeholder="未定留空，前台顯示 --">
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" id="specCancelBtn">取消</button>
+      <button class="btn-primary" id="specSaveBtn">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 價格歷史 modal -->
+<div class="modal-backdrop" id="historyModal" hidden>
+  <div class="modal">
+    <h2>價格異動歷史</h2>
+    <ul class="history-list" id="historyList"></ul>
+    <div class="form-actions">
+      <button class="btn-secondary" id="historyCloseBtn">關閉</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin.js"></script>
+</body>
+</html>

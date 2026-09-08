@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>產品價格查詢</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="topbar">
+  <h1>產品價格查詢</h1>
+  <nav>
+    <a href="admin.html">前往後台管理 →</a>
+  </nav>
+</div>
+
+<div class="container">
+  <div class="toolbar">
+    <input type="text" id="search" class="search-input" placeholder="搜尋產品名稱或規格…">
+    <select id="categoryFilter">
+      <option value="">全部分類</option>
+    </select>
+  </div>
+
+  <div id="productList"></div>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
