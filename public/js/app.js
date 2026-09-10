@@ -19,11 +19,6 @@ function formatPrice(n) {
   return Number(n).toLocaleString('zh-Hant', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
-function formatDate(ts) {
-  if (!ts || !ts.seconds) return '';
-  return new Date(ts.seconds * 1000).toLocaleString('zh-Hant', { hour12: false });
-}
-
 function priceCellHtml(price, justChanged) {
   const priceText = price === null || price === undefined ? '--' : `$${formatPrice(price)}`;
   return justChanged ? `${priceText} <span class="badge-changed">調整</span>` : priceText;
@@ -146,6 +141,8 @@ function renderProducts(products) {
 
 const globalHistoryModal = document.getElementById('globalHistoryModal');
 const globalHistoryBody = document.getElementById('globalHistoryBody');
+const globalHistoryDateEl = document.getElementById('globalHistoryDate');
+let selectedHistoryDate = null;
 
 function findProductAndSpec(productId, specId) {
   const product = productsCache.find((p) => p.id === productId);
@@ -156,12 +153,32 @@ function findProductAndSpec(productId, specId) {
   };
 }
 
+// 用瑞典語系格式取得本地日期字串（YYYY-MM-DD），做為同一天的分組 key。
+function historyDateKey(ts) {
+  if (!ts || !ts.seconds) return null;
+  return new Date(ts.seconds * 1000).toLocaleDateString('sv-SE');
+}
+
 function renderGlobalHistory() {
-  if (!historyCache.length) {
-    globalHistoryBody.innerHTML = '<tr><td colspan="5" class="note">尚無異動紀錄</td></tr>';
+  const dateKeys = [...new Set(historyCache.map((h) => historyDateKey(h.changedAt)).filter(Boolean))]
+    .sort((a, b) => b.localeCompare(a));
+
+  if (!dateKeys.length) {
+    globalHistoryDateEl.innerHTML = '';
+    globalHistoryBody.innerHTML = '<tr><td colspan="4" class="note">尚無異動紀錄</td></tr>';
     return;
   }
-  globalHistoryBody.innerHTML = historyCache.map((h) => {
+
+  if (!selectedHistoryDate || !dateKeys.includes(selectedHistoryDate)) {
+    selectedHistoryDate = dateKeys[0];
+  }
+
+  globalHistoryDateEl.innerHTML = dateKeys.map((d) =>
+    `<option value="${d}" ${d === selectedHistoryDate ? 'selected' : ''}>${d.replaceAll('-', '/')}</option>`
+  ).join('');
+
+  const rows = historyCache.filter((h) => historyDateKey(h.changedAt) === selectedHistoryDate);
+  globalHistoryBody.innerHTML = rows.map((h) => {
     const { productName, specName } = findProductAndSpec(h.productId, h.specId);
     const isNewEntry = h.oldPrice === null || h.oldPrice === undefined;
     const diff = isNewEntry ? null : h.newPrice - h.oldPrice;
@@ -172,7 +189,6 @@ function renderGlobalHistory() {
       : '<span class="badge-action badge-adjusted">調整</span>';
     return `
       <tr>
-        <td>${formatDate(h.changedAt)}</td>
         <td>${escapeHtml(productName)}</td>
         <td>${escapeHtml(specName)}</td>
         <td>${actionHtml}</td>
@@ -184,6 +200,11 @@ function renderGlobalHistory() {
 
 document.getElementById('globalHistoryBtn').addEventListener('click', () => {
   globalHistoryModal.hidden = false;
+  renderGlobalHistory();
+});
+
+globalHistoryDateEl.addEventListener('change', () => {
+  selectedHistoryDate = globalHistoryDateEl.value;
   renderGlobalHistory();
 });
 

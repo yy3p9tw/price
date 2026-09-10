@@ -33,10 +33,14 @@
 <!-- 全站價格異動歷史 modal -->
 <div class="modal-backdrop" id="globalHistoryModal" hidden>
   <div class="modal modal-wide">
-    <h2>價格異動歷史（全部產品）</h2>
+    <h2>價格異動歷史</h2>
+    <div class="form-row">
+      <label>選擇日期</label>
+      <select id="globalHistoryDate"></select>
+    </div>
     <div class="table-scroll">
       <table>
-        <thead><tr><th>日期</th><th>產品</th><th>規格</th><th>動作</th><th>價格</th></tr></thead>
+        <thead><tr><th>產品</th><th>規格</th><th>動作</th><th>價格</th></tr></thead>
         <tbody id="globalHistoryBody"></tbody>
       </table>
     </div>
