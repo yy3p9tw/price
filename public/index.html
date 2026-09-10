@@ -14,6 +14,9 @@
 <div class="sticky-head">
   <div class="topbar">
     <h1>產品價格查詢</h1>
+    <nav>
+      <span class="muted-link" id="globalHistoryBtn">價格異動歷史</span>
+    </nav>
   </div>
 </div>
 
@@ -25,6 +28,22 @@
   </div>
 
   <div id="productList"></div>
+</div>
+
+<!-- 全站價格異動歷史 modal -->
+<div class="modal-backdrop" id="globalHistoryModal" hidden>
+  <div class="modal modal-wide">
+    <h2>價格異動歷史（全部產品）</h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>日期</th><th>產品</th><th>規格</th><th>動作</th><th>價格</th></tr></thead>
+        <tbody id="globalHistoryBody"></tbody>
+      </table>
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" id="globalHistoryCloseBtn">關閉</button>
+    </div>
+  </div>
 </div>
 
 <button class="back-to-top" id="backToTop" hidden title="回到頂部">↑</button>

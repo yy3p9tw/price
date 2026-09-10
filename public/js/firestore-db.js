@@ -2,7 +2,7 @@ import { firebaseConfig } from './firebase-config.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
 import {
   getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc,
-  query, orderBy, writeBatch, serverTimestamp, where, getDocs,
+  query, orderBy, limit, writeBatch, serverTimestamp, where, getDocs,
 } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import {
   getAuth, signInWithEmailAndPassword, signOut as fbSignOut, onAuthStateChanged,
@@ -114,6 +114,14 @@ export async function deleteSpec(product, specId) {
 export async function setSpecChanged(product, specId, justChanged) {
   const specs = (product.specs || []).map((s) => (s.id === specId ? { ...s, justChanged } : s));
   await updateDoc(doc(db, 'products', product.id), { specs });
+}
+
+// 全站價格異動歷史（所有產品、所有規格的新增與調整紀錄）
+export function watchAllHistory(callback) {
+  const q = query(collection(db, 'priceHistory'), orderBy('changedAt', 'desc'), limit(300));
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+  });
 }
 
 export async function getSpecHistory(productId, specId) {

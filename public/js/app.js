@@ -1,4 +1,4 @@
-import { watchCategories, watchProducts } from './firestore-db.js';
+import { watchCategories, watchProducts, watchAllHistory } from './firestore-db.js';
 import { initBackToTop } from './ui.js';
 
 const productListEl = document.getElementById('productList');
@@ -7,6 +7,7 @@ const quickNavEl = document.getElementById('quickNav');
 
 let categoriesCache = [];
 let productsCache = [];
+let historyCache = [];
 
 function escapeHtml(str) {
   return String(str ?? '').replace(/[&<>"']/g, (c) => ({
@@ -16,6 +17,11 @@ function escapeHtml(str) {
 
 function formatPrice(n) {
   return Number(n).toLocaleString('zh-Hant', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
+function formatDate(ts) {
+  if (!ts || !ts.seconds) return '';
+  return new Date(ts.seconds * 1000).toLocaleString('zh-Hant', { hour12: false });
 }
 
 function priceCellHtml(price, justChanged) {
@@ -136,6 +142,57 @@ function renderProducts(products) {
   ).join('');
 }
 
+// ---------- 全站價格異動歷史 ----------
+
+const globalHistoryModal = document.getElementById('globalHistoryModal');
+const globalHistoryBody = document.getElementById('globalHistoryBody');
+
+function findProductAndSpec(productId, specId) {
+  const product = productsCache.find((p) => p.id === productId);
+  const spec = product ? product.specs.find((s) => s.id === specId) : null;
+  return {
+    productName: product ? product.name : '（已刪除產品）',
+    specName: spec ? spec.spec_name : '（已刪除規格）',
+  };
+}
+
+function renderGlobalHistory() {
+  if (!historyCache.length) {
+    globalHistoryBody.innerHTML = '<tr><td colspan="5" class="note">尚無異動紀錄</td></tr>';
+    return;
+  }
+  globalHistoryBody.innerHTML = historyCache.map((h) => {
+    const { productName, specName } = findProductAndSpec(h.productId, h.specId);
+    const isNewEntry = h.oldPrice === null || h.oldPrice === undefined;
+    const diff = isNewEntry ? null : h.newPrice - h.oldPrice;
+    const priceCls = diff > 0 ? 'price-up' : diff < 0 ? 'price-down' : '';
+    const priceText = isNewEntry ? `$${formatPrice(h.newPrice)}` : `$${formatPrice(h.oldPrice)} → $${formatPrice(h.newPrice)}`;
+    const actionHtml = isNewEntry
+      ? '<span class="badge-action badge-created">新增</span>'
+      : '<span class="badge-action badge-adjusted">調整</span>';
+    return `
+      <tr>
+        <td>${formatDate(h.changedAt)}</td>
+        <td>${escapeHtml(productName)}</td>
+        <td>${escapeHtml(specName)}</td>
+        <td>${actionHtml}</td>
+        <td class="price-cell ${priceCls}">${priceText}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+document.getElementById('globalHistoryBtn').addEventListener('click', () => {
+  globalHistoryModal.hidden = false;
+  renderGlobalHistory();
+});
+
+document.getElementById('globalHistoryCloseBtn').addEventListener('click', () => (globalHistoryModal.hidden = true));
+
+globalHistoryModal.addEventListener('click', (e) => {
+  if (e.target === globalHistoryModal) globalHistoryModal.hidden = true;
+});
+
 searchEl.addEventListener('input', applyFiltersAndRender);
 
 watchCategories((categories) => {
@@ -146,6 +203,11 @@ watchCategories((categories) => {
 watchProducts((products) => {
   productsCache = products;
   applyFiltersAndRender();
+});
+
+watchAllHistory((history) => {
+  historyCache = history;
+  if (!globalHistoryModal.hidden) renderGlobalHistory();
 });
 
 initBackToTop();

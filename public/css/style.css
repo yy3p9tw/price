@@ -271,6 +271,18 @@ th.row-head { color: var(--text); font-weight: 600; font-size: 13px; white-space
 .price-up { color: var(--danger); }
 .price-down { color: var(--success); }
 
+.modal-wide { max-width: 680px; }
+.badge-created { background: var(--badge-bg); color: var(--badge-text); }
+.badge-adjusted { background: var(--primary); color: #fff; }
+.badge-action {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .muted-link { color: var(--text-muted); font-size: 12px; cursor: pointer; }
 .muted-link:hover { color: var(--primary); }
 

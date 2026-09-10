@@ -2,6 +2,7 @@ import {
   watchAuth, login, logout, watchCategories, watchProducts,
   createCategory, deleteCategory, createProduct, updateProduct, deleteProduct,
   addSpec, updateSpec, deleteSpec, getSpecHistory, setProductNew, setSpecChanged,
+  watchAllHistory,
 } from './firestore-db.js';
 import { initBackToTop } from './ui.js';
 
@@ -15,8 +16,10 @@ const logoutBtn = document.getElementById('logoutBtn');
 
 let categories = [];
 let products = [];
+let allHistory = [];
 let stopWatchCategories = null;
 let stopWatchProducts = null;
+let stopWatchAllHistory = null;
 
 function escapeHtml(str) {
   return String(str ?? '').replace(/[&<>"']/g, (c) => ({
@@ -46,14 +49,17 @@ watchAuth((user) => {
     logoutBtn.hidden = false;
     if (!stopWatchCategories) stopWatchCategories = watchCategories(onCategories);
     if (!stopWatchProducts) stopWatchProducts = watchProducts(onProducts);
+    if (!stopWatchAllHistory) stopWatchAllHistory = watchAllHistory(onAllHistory);
   } else {
     loginCard.hidden = false;
     adminArea.hidden = true;
     logoutBtn.hidden = true;
     if (stopWatchCategories) { stopWatchCategories(); stopWatchCategories = null; }
     if (stopWatchProducts) { stopWatchProducts(); stopWatchProducts = null; }
+    if (stopWatchAllHistory) { stopWatchAllHistory(); stopWatchAllHistory = null; }
     categories = [];
     products = [];
+    allHistory = [];
   }
 });
 
@@ -353,12 +359,64 @@ async function openHistoryModal(productId, specId) {
 
 document.getElementById('historyCloseBtn').addEventListener('click', () => (historyModal.hidden = true));
 
+// ---------- global history modal ----------
+
+const globalHistoryModal = document.getElementById('globalHistoryModal');
+const globalHistoryBody = document.getElementById('globalHistoryBody');
+
+function onAllHistory(list) {
+  allHistory = list;
+  if (!globalHistoryModal.hidden) renderGlobalHistory();
+}
+
+function findProductAndSpec(productId, specId) {
+  const product = products.find((p) => p.id === productId);
+  const spec = product ? product.specs.find((s) => s.id === specId) : null;
+  return {
+    productName: product ? product.name : '（已刪除產品）',
+    specName: spec ? spec.spec_name : '（已刪除規格）',
+  };
+}
+
+function renderGlobalHistory() {
+  if (!allHistory.length) {
+    globalHistoryBody.innerHTML = '<tr><td colspan="5" class="note">尚無異動紀錄</td></tr>';
+    return;
+  }
+  globalHistoryBody.innerHTML = allHistory.map((h) => {
+    const { productName, specName } = findProductAndSpec(h.productId, h.specId);
+    const isNewEntry = h.oldPrice === null || h.oldPrice === undefined;
+    const diff = isNewEntry ? null : h.newPrice - h.oldPrice;
+    const priceCls = diff > 0 ? 'price-up' : diff < 0 ? 'price-down' : '';
+    const priceText = isNewEntry ? `$${formatPrice(h.newPrice)}` : `$${formatPrice(h.oldPrice)} → $${formatPrice(h.newPrice)}`;
+    const actionHtml = isNewEntry
+      ? '<span class="badge-action badge-created">新增</span>'
+      : '<span class="badge-action badge-adjusted">調整</span>';
+    return `
+      <tr>
+        <td>${formatDate(h.changedAt)}</td>
+        <td>${escapeHtml(productName)}</td>
+        <td>${escapeHtml(specName)}</td>
+        <td>${actionHtml}</td>
+        <td class="price-cell ${priceCls}">${priceText}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+document.getElementById('globalHistoryBtn').addEventListener('click', () => {
+  globalHistoryModal.hidden = false;
+  renderGlobalHistory();
+});
+
+document.getElementById('globalHistoryCloseBtn').addEventListener('click', () => (globalHistoryModal.hidden = true));
+
 // ---------- misc ----------
 
 searchEl.addEventListener('input', renderProducts);
 categoryFilterEl.addEventListener('change', renderProducts);
 
-[productModal, specModal, historyModal].forEach(modal => {
+[productModal, specModal, historyModal, globalHistoryModal].forEach(modal => {
   modal.addEventListener('click', (e) => {
     if (e.target === modal) modal.hidden = true;
   });
