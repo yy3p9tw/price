@@ -4,6 +4,8 @@ import { initBackToTop } from './ui.js';
 const productListEl = document.getElementById('productList');
 const searchEl = document.getElementById('search');
 const quickNavEl = document.getElementById('quickNav');
+const printBtn = document.getElementById('printBtn');
+const printHeaderEl = document.getElementById('printHeader');
 
 let categoriesCache = [];
 let productsCache = [];
@@ -230,5 +232,10 @@ watchAllHistory((history) => {
   historyCache = history;
   if (!globalHistoryModal.hidden) renderGlobalHistory();
 });
+
+// ---------- 列印 ----------
+
+printHeaderEl.textContent = `產品價格表　列印日期：${new Date().toLocaleDateString('zh-Hant')}`;
+printBtn.addEventListener('click', () => window.print());
 
 initBackToTop();
