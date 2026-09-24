@@ -116,6 +116,15 @@ export async function setSpecChanged(product, specId, justChanged) {
   await updateDoc(doc(db, 'products', product.id), { specs });
 }
 
+export async function moveSpec(product, specId, direction) {
+  const specs = [...(product.specs || [])];
+  const idx = specs.findIndex((s) => s.id === specId);
+  const newIdx = idx + direction;
+  if (idx === -1 || newIdx < 0 || newIdx >= specs.length) return;
+  [specs[idx], specs[newIdx]] = [specs[newIdx], specs[idx]];
+  await updateDoc(doc(db, 'products', product.id), { specs });
+}
+
 // 全站價格異動歷史（所有產品、所有規格的新增與調整紀錄）
 export function watchAllHistory(callback) {
   const q = query(collection(db, 'priceHistory'), orderBy('changedAt', 'desc'), limit(300));

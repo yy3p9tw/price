@@ -118,6 +118,9 @@ button {
 .btn-sm { padding: 4px 10px; font-size: 12px; }
 .btn-icon { padding: 4px 8px; }
 
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+button:disabled:hover { background: var(--surface); }
+
 .card {
   background: var(--surface);
   border: 1px solid var(--border);

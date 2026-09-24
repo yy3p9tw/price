@@ -1,7 +1,7 @@
 import {
   watchAuth, login, logout, watchCategories, watchProducts,
   createCategory, deleteCategory, createProduct, updateProduct, deleteProduct,
-  addSpec, updateSpec, deleteSpec, getSpecHistory, setProductNew, setSpecChanged,
+  addSpec, updateSpec, deleteSpec, getSpecHistory, setProductNew, setSpecChanged, moveSpec,
   watchAllHistory,
 } from './firestore-db.js';
 import { initBackToTop } from './ui.js';
@@ -169,12 +169,14 @@ function renderProducts() {
         <table>
           <thead><tr><th>規格</th><th>價格</th><th></th></tr></thead>
           <tbody>
-            ${p.specs.map(s => `
+            ${p.specs.map((s, i) => `
               <tr data-spec-id="${s.id}">
                 <td>${escapeHtml(s.spec_name)}</td>
                 <td class="price-cell">${priceCellHtml(s.price)} ${s.justChanged ? '<span class="badge-changed">調整</span>' : ''}</td>
                 <td>
                   <div class="spec-row-actions">
+                    <button class="btn-secondary btn-icon move-spec-btn" data-id="${s.id}" data-dir="-1" title="上移" ${i === 0 ? 'disabled' : ''}>↑</button>
+                    <button class="btn-secondary btn-icon move-spec-btn" data-id="${s.id}" data-dir="1" title="下移" ${i === p.specs.length - 1 ? 'disabled' : ''}>↓</button>
                     <span class="muted-link history-spec-btn" data-id="${s.id}">歷史</span>
                     <span class="muted-link toggle-changed-btn" data-id="${s.id}" data-value="${s.justChanged ? '0' : '1'}">${s.justChanged ? '取消標記' : '標記調整'}</span>
                     <button class="btn-secondary btn-sm edit-spec-btn" data-id="${s.id}">編輯</button>
@@ -221,6 +223,13 @@ function bindProductCardEvents() {
     btn.addEventListener('click', async () => {
       const product = products.find(p => p.specs.some(s => s.id === btn.dataset.id));
       await setSpecChanged(product, btn.dataset.id, btn.dataset.value === '1');
+    });
+  });
+
+  productListEl.querySelectorAll('.move-spec-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const product = products.find(p => p.specs.some(s => s.id === btn.dataset.id));
+      await moveSpec(product, btn.dataset.id, Number(btn.dataset.dir));
     });
   });
 
