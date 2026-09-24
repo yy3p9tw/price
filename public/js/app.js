@@ -4,7 +4,8 @@ import { initBackToTop } from './ui.js';
 const productListEl = document.getElementById('productList');
 const searchEl = document.getElementById('search');
 const quickNavEl = document.getElementById('quickNav');
-const exportWordBtn = document.getElementById('exportWordBtn');
+const printBtn = document.getElementById('printBtn');
+const printHeaderEl = document.getElementById('printHeader');
 
 let categoriesCache = [];
 let productsCache = [];
@@ -236,88 +237,9 @@ watchAllHistory((history) => {
   if (!globalHistoryModal.hidden) renderGlobalHistory();
 });
 
-// ---------- 匯出 Word 檔 ----------
+// ---------- 列印 ----------
 
-function specTableRowsHtml(specs) {
-  return specs.map((s) => `
-    <tr>
-      <td>${escapeHtml(s.spec_name)}</td>
-      <td align="right">${s.price === null || s.price === undefined ? '--' : '$' + formatPrice(s.price)}</td>
-    </tr>
-  `).join('');
-}
-
-function wordGridTableHtml(grid) {
-  return `
-    <table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse; width:100%; margin:4px 0 10px;">
-      <tr>
-        <td></td>
-        ${grid.cols.map(c => `<th>${escapeHtml(c)}</th>`).join('')}
-      </tr>
-      ${grid.rows.map(r => `
-        <tr>
-          <th>${escapeHtml(r)}</th>
-          ${grid.cols.map(c => {
-            const s = grid.matrix[r + ' ' + c];
-            const price = s && s.price !== null && s.price !== undefined ? '$' + formatPrice(s.price) : '--';
-            return `<td align="right">${price}</td>`;
-          }).join('')}
-        </tr>
-      `).join('')}
-    </table>
-  `;
-}
-
-function wordFlatTableHtml(specs) {
-  return `
-    <table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse; width:100%; margin:4px 0 10px;">
-      <tr><th align="left">規格</th><th align="right">價格</th></tr>
-      ${specTableRowsHtml(specs)}
-    </table>
-  `;
-}
-
-function wordProductHtml(p) {
-  const grid = p.specs.length ? buildGrid(p.specs) : null;
-  return `
-    <h3 style="font-size:13px; margin:10px 0 2px;">${escapeHtml(p.name)}${p.isNew ? '（新品）' : ''}</h3>
-    ${p.note ? `<p style="color:#666; font-size:11px; margin:0 0 2px;">${escapeHtml(p.note)}</p>` : ''}
-    ${p.specs.length ? (grid ? wordGridTableHtml(grid) : wordFlatTableHtml(p.specs)) : '<p style="color:#666; font-size:11px;">尚未設定規格</p>'}
-  `;
-}
-
-function buildWordDocument() {
-  const sections = buildSections(filteredProducts());
-  const dateStr = new Date().toLocaleDateString('zh-Hant');
-  const body = sections.map((sec) => `
-    <h2 style="font-size:15px; border-bottom:1px solid #999; padding-bottom:2px; margin:16px 0 6px;">${escapeHtml(sec.name)}</h2>
-    ${sec.items.map(wordProductHtml).join('')}
-  `).join('');
-
-  return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-<head>
-<meta charset="utf-8">
-<title>產品價格表</title>
-</head>
-<body style="font-family:'Microsoft JhengHei', Arial, sans-serif; font-size:12px;">
-<h1 style="font-size:18px; margin:0 0 4px;">產品價格表</h1>
-<p style="color:#666; margin:0 0 12px;">匯出日期：${dateStr}</p>
-${body}
-</body>
-</html>`;
-}
-
-exportWordBtn.addEventListener('click', () => {
-  const html = buildWordDocument();
-  const blob = new Blob(['﻿', html], { type: 'application/msword' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `產品價格表_${new Date().toISOString().slice(0, 10)}.doc`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-});
+printHeaderEl.textContent = `產品價格表　列印日期：${new Date().toLocaleDateString('zh-Hant')}`;
+printBtn.addEventListener('click', () => window.print());
 
 initBackToTop();
